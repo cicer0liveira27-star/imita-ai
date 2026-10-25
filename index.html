@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#24154a">
+<title>Imita Aí!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{
+  --bg1:#24154a; --bg2:#3b1d6e; --card:#ffffff14; --card2:#ffffff22; --line:#ffffff2e;
+  --text:#fff; --muted:#d9cdfa; --yellow:#ffd23f; --pink:#ff5d8f; --mint:#3ee6b0; --blue:#5cc8ff; --red:#ff5a5a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg1));color:var(--text);
+  font-family:'Baloo 2',system-ui,sans-serif;overscroll-behavior:none}
+#root{min-height:100dvh;display:flex;justify-content:center}
+.app{width:100%;max-width:480px;padding:16px 16px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+h1{margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-1px;text-align:center}
+h1 span{color:var(--yellow)}
+h2{margin:0;font-size:24px;font-weight:800}
+.sub{color:var(--muted);text-align:center;margin:-6px 0 0;font-size:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px}
+label{font-weight:700;font-size:15px;color:var(--muted)}
+input{width:100%;font:inherit;font-size:20px;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:#00000033;color:#fff;outline:none}
+input:focus{border-color:var(--yellow)}
+.btn{font:inherit;font-weight:800;font-size:20px;border:0;border-radius:16px;padding:14px 18px;cursor:pointer;color:#2a1650;background:var(--yellow);
+  box-shadow:0 5px 0 #c99a00;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #c99a00}
+.btn.pink{background:var(--pink);color:#fff;box-shadow:0 5px 0 #c23763}
+.btn.mint{background:var(--mint);box-shadow:0 5px 0 #1fa77c}
+.btn.ghost{background:var(--card2);color:#fff;box-shadow:none}
+.btn:disabled{opacity:.45;pointer-events:none}
+.row{display:flex;gap:10px;align-items:center}
+.col{display:flex;flex-direction:column;gap:10px}
+.grow{flex:1}
+.chars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.charbtn{background:#00000025;border:3px solid transparent;border-radius:16px;padding:4px 2px 0;cursor:pointer;color:#fff;font:inherit;font-size:13px;font-weight:700}
+.charbtn.sel{border-color:var(--yellow);background:#ffd23f22}
+.charbtn.taken{opacity:.35}
+.err{background:#ff5a5a33;border:1px solid var(--red);border-radius:14px;padding:10px 12px;font-weight:600}
+.code{font-size:56px;font-weight:800;letter-spacing:8px;color:var(--yellow);text-align:center;line-height:1}
+.players{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.pl{display:flex;flex-direction:column;align-items:center;text-align:center;font-weight:700;font-size:15px;line-height:1.1;padding:6px;border-radius:16px;background:#00000022;position:relative}
+.pl .tag{font-size:11px;color:var(--yellow)}
+.pl.off{opacity:.4}
+.pl .ok{position:absolute;top:4px;right:6px;font-size:16px}
+.seg{display:flex;background:#00000033;border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;font:inherit;font-weight:700;font-size:15px;border:0;border-radius:10px;padding:8px 4px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--yellow);color:#2a1650}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:800}
+.pill{background:var(--card2);border-radius:999px;padding:4px 12px;font-size:15px}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;min-height:340px}
+.big{font-size:96px;font-weight:800;line-height:1;color:var(--yellow)}
+.huge{font-size:30px;font-weight:800}
+.hint{color:var(--muted);font-size:16px}
+.meter{width:100%;height:18px;border-radius:999px;background:#00000040;overflow:hidden}
+.meter>div{height:100%;background:linear-gradient(90deg,var(--mint),var(--yellow),var(--pink));transition:width .08s}
+.rec{display:inline-flex;align-items:center;gap:8px;background:var(--red);padding:6px 16px;border-radius:999px;font-weight:800;font-size:22px;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.06)}}
+.bar{width:100%;height:8px;border-radius:9px;background:#00000040;overflow:hidden}
+.bar>div{height:100%;background:#fff}
+.scores{display:flex;flex-direction:column;gap:6px}
+.sc{display:flex;align-items:center;gap:8px;background:#00000022;border-radius:14px;padding:4px 10px 4px 4px;font-weight:700}
+.sc .pts{margin-left:auto;font-size:20px;color:var(--yellow)}
+.sc.me{outline:2px solid var(--yellow)}
+.parts{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.parts span{background:var(--card2);border-radius:999px;padding:2px 10px;font-size:14px;font-weight:700}
+.sab{background:var(--pink);border-radius:14px;padding:6px 12px;font-weight:800;font-size:17px}
+.effects{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.effects button,.victims button{font:inherit;font-weight:800;font-size:15px;border:3px solid transparent;border-radius:14px;padding:10px 4px;background:#00000033;color:#fff;cursor:pointer}
+.effects button.on,.victims button.on{border-color:var(--pink);background:#ff5d8f33}
+.victims{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.victims button{display:flex;align-items:center;gap:6px;padding:4px 8px}
+.wheelwrap{position:relative;width:280px;height:280px}
+.wheelwrap .pointer{position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:28px solid #fff;filter:drop-shadow(0 3px 2px #0006);z-index:2}
+.wheel{width:100%;height:100%;transition:transform 2.8s cubic-bezier(.15,.85,.2,1)}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:8px}
+.podium .p{display:flex;flex-direction:column;align-items:center;font-weight:800}
+.podium .blk{width:90px;border-radius:14px 14px 0 0;background:var(--card2);display:flex;align-items:flex-start;justify-content:center;font-size:30px;padding-top:6px}
+.critter .body{transform-origin:50% 90%;transform-box:view-box}
+.critter.talk .body{animation:bob .28s infinite alternate}
+@keyframes bob{to{transform:scale(1.04,.95)}}
+.critter .mouthTalk{transform-box:fill-box;transform-origin:center;animation:talk .16s infinite alternate}
+@keyframes talk{from{transform:scaleY(.25)}to{transform:scaleY(1.15)}}
+.critter.idle .body{animation:idle 2.4s ease-in-out infinite}
+@keyframes idle{50%{transform:translateY(-2px) scale(1.01,.99)}}
+.pop{animation:pop .4s ease-out}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+.small{font-size:13px;color:var(--muted);text-align:center}
+a{color:var(--yellow)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef } = React;
+const html = htm.bind(React.createElement);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+/* =========================================================
+   PERSONAGENS (originais)
+   ========================================================= */
+const CHARS = [
+  { id: 'pudim', nome: 'Pudim', cor: '#ffc94d', fy: 62 },
+  { id: 'bolota', nome: 'Bolota', cor: '#ff6b8b', fy: 56 },
+  { id: 'feijao', nome: 'Feijão', cor: '#7ee36b', fy: 58 },
+  { id: 'assombro', nome: 'Assombro', cor: '#eef0ff', fy: 46 },
+  { id: 'gota', nome: 'Gota', cor: '#5cc8ff', fy: 64 },
+  { id: 'cactinho', nome: 'Cactinho', cor: '#3fbf7f', fy: 46 },
+  { id: 'nuvi', nome: 'Nuvi', cor: '#c9b6ff', fy: 60 },
+  { id: 'torradinha', nome: 'Torradinha', cor: '#e8a15a', fy: 52 },
+];
+const charOf = id => CHARS.find(c => c.id === id) || CHARS[0];
+
+function Body({ c }) {
+  const f = c.cor;
+  switch (c.id) {
+    case 'pudim': return html`<g>
+      <ellipse cx="50" cy="91" rx="38" ry="6" fill="#ffffff55"/>
+      <path d="M20 88 L29 32 Q50 22 71 32 L80 88 Q50 96 20 88Z" fill=${f}/>
+      <path d="M29 32 Q50 22 71 32 L69 43 Q60 50 50 44 Q40 50 31 43Z" fill="#a8541a"/></g>`;
+    case 'bolota': return html`<g>
+      <ellipse cx="38" cy="90" rx="8" ry="4" fill="#ff9f43"/><ellipse cx="62" cy="90" rx="8" ry="4" fill="#ff9f43"/>
+      <circle cx="50" cy="56" r="34" fill=${f}/>
+      <path d="M46 23 Q44 10 52 8 Q50 16 56 22Z" fill=${f}/></g>`;
+    case 'feijao': return html`<path d="M30 30 C8 52 22 94 55 91 C88 88 94 60 76 46 C66 38 64 24 50 21 C40 19 34 25 30 30Z" fill=${f}/>`;
+    case 'assombro': return html`<path d="M20 90 L20 45 Q20 13 50 13 Q80 13 80 45 L80 90 L70 81 L60 90 L50 81 L40 90 L30 81Z" fill=${f}/>`;
+    case 'gota': return html`<path d="M50 8 C62 30 83 47 83 66 A33 33 0 0 1 17 66 C17 47 38 30 50 8Z" fill=${f}/>`;
+    case 'cactinho': return html`<g>
+      <path d="M34 62 L22 62 Q16 62 16 54 L16 42" stroke=${f} strokeWidth="11" fill="none" strokeLinecap="round"/>
+      <path d="M66 54 L78 54 Q84 54 84 46 L84 34" stroke=${f} strokeWidth="11" fill="none" strokeLinecap="round"/>
+      <rect x="32" y="18" width="36" height="76" rx="18" fill=${f}/>
+      <circle cx="50" cy="16" r="6" fill="#ff7eb6"/><circle cx="50" cy="16" r="2.5" fill="#ffd23f"/></g>`;
+    case 'nuvi': return html`<g>
+      <circle cx="34" cy="58" r="20" fill=${f}/><circle cx="55" cy="44" r="25" fill=${f}/>
+      <circle cx="72" cy="62" r="18" fill=${f}/><rect x="18" y="58" width="66" height="28" rx="14" fill=${f}/></g>`;
+    case 'torradinha': return html`<g>
+      <path d="M20 42 Q18 16 38 17 Q50 7 62 17 Q82 16 80 42 L77 90 L23 90Z" fill="#b8692e"/>
+      <path d="M27 44 Q25 24 40 24 Q50 16 60 24 Q75 24 73 44 L71 84 L29 84Z" fill="#f4cf92"/></g>`;
+  }
+  return null;
+}
+
+function Critter({ id, size = 80, talk = false, idle = false, mood = 'smile' }) {
+  const c = charOf(id);
+  const y = c.fy;
+  const dark = '#2a1650';
+  return html`<svg className=${'critter' + (talk ? ' talk' : idle ? ' idle' : '')} width=${size} height=${size} viewBox="0 0 100 100" aria-label=${c.nome}>
+    <g className="body">
+      <${Body} c=${c}/>
+      <circle cx="40" cy=${y - 6} r="6.5" fill="#fff"/><circle cx="60" cy=${y - 6} r="6.5" fill="#fff"/>
+      <circle cx="41" cy=${y - 5} r="3.4" fill=${dark}/><circle cx="61" cy=${y - 5} r="3.4" fill=${dark}/>
+      <circle cx="42.2" cy=${y - 6.4} r="1.1" fill="#fff"/><circle cx="62.2" cy=${y - 6.4} r="1.1" fill="#fff"/>
+      <ellipse cx="32" cy=${y + 3} rx="4.5" ry="2.6" fill="#ff7a9a" opacity=".55"/>
+      <ellipse cx="68" cy=${y + 3} rx="4.5" ry="2.6" fill="#ff7a9a" opacity=".55"/>
+      ${talk
+        ? html`<ellipse className="mouthTalk" cx="50" cy=${y + 6} rx="6" ry="5" fill=${dark}/>`
+        : mood === 'sad'
+          ? html`<path d=${`M44 ${y + 9} Q50 ${y + 3} 56 ${y + 9}`} stroke=${dark} strokeWidth="2.6" fill="none" strokeLinecap="round"/>`
+          : html`<path d=${`M44 ${y + 4} Q50 ${y + 10} 56 ${y + 4}`} stroke=${dark} strokeWidth="2.6" fill="none" strokeLinecap="round"/>`}
+    </g></svg>`;
+}
+
+/* =========================================================
+   SONS DE REFERÊNCIA (sintetizados)
+   seg: t início, d duração, f pontos de frequência, w onda, v vibrato (Hz de profundidade)
+   ========================================================= */
+const rep = (n, gap, seg) => Array.from({ length: n }, (_, i) => ({ ...seg, t: (seg.t || 0) + i * gap }));
+const SOUNDS = [
+  // Bichos
+  { id: 'cachorro', pack: 'bichos', nome: 'Cachorro', emo: '🐶', segs: [{ t: 0, d: .22, f: [520, 380], w: 'sawtooth' }, { t: .38, d: .26, f: [540, 360], w: 'sawtooth' }] },
+  { id: 'gato', pack: 'bichos', nome: 'Gato', emo: '🐱', segs: [{ t: 0, d: .85, f: [470, 780, 420], w: 'triangle' }] },
+  { id: 'vaca', pack: 'bichos', nome: 'Vaca', emo: '🐮', segs: [{ t: 0, d: 1.4, f: [170, 215, 150], w: 'sawtooth', v: 4 }] },
+  { id: 'galo', pack: 'bichos', nome: 'Galo', emo: '🐓', segs: [{ t: 0, d: .16, f: [480, 540], w: 'square' }, { t: .3, d: .16, f: [520, 590], w: 'square' }, { t: .6, d: .18, f: [600, 690], w: 'square' }, { t: .92, d: .8, f: [690, 760, 520], w: 'square' }] },
+  { id: 'pato', pack: 'bichos', nome: 'Pato', emo: '🦆', segs: rep(3, .28, { d: .17, f: [450, 390], w: 'square' }) },
+  { id: 'lobo', pack: 'bichos', nome: 'Lobo', emo: '🐺', segs: [{ t: 0, d: 1.8, f: [270, 540, 600, 360], w: 'triangle', v: 6 }] },
+  { id: 'passarinho', pack: 'bichos', nome: 'Passarinho', emo: '🐦', segs: rep(3, .32, { d: .2, f: [800, 1150], w: 'sine' }) },
+  { id: 'sapo', pack: 'bichos', nome: 'Sapo', emo: '🐸', segs: rep(2, .42, { d: .24, f: [180, 220, 150], w: 'square' }) },
+  // Máquinas
+  { id: 'sirene', pack: 'maquinas', nome: 'Sirene', emo: '🚨', segs: [{ t: 0, d: 2.1, f: [600, 940, 600, 940, 600], w: 'sine' }] },
+  { id: 'campainha', pack: 'maquinas', nome: 'Campainha', emo: '🔔', segs: [{ t: 0, d: .4, f: [660, 660], w: 'triangle' }, { t: .55, d: .65, f: [520, 520], w: 'triangle' }] },
+  { id: 'buzina', pack: 'maquinas', nome: 'Buzina', emo: '🚗', segs: [{ t: 0, d: .2, f: [380, 380], w: 'square' }, { t: .34, d: .2, f: [380, 380], w: 'square' }, { t: .7, d: .6, f: [380, 370], w: 'square' }] },
+  { id: 'celular', pack: 'maquinas', nome: 'Celular', emo: '📱', segs: rep(4, .26, { d: .13, f: [880, 880], w: 'square' }).map((s, i) => ({ ...s, f: i % 2 ? [660, 660] : [880, 880] })) },
+  { id: 'motor', pack: 'maquinas', nome: 'Motor', emo: '🏎️', segs: [{ t: 0, d: 1.5, f: [110, 230, 150, 280], w: 'sawtooth' }] },
+  { id: 'microondas', pack: 'maquinas', nome: 'Micro-ondas', emo: '📟', segs: rep(3, .3, { d: .16, f: [1000, 1000], w: 'sine' }) },
+  { id: 'laser', pack: 'maquinas', nome: 'Laser', emo: '🔫', segs: rep(3, .32, { d: .22, f: [900, 380], w: 'square' }) },
+  // Doidos
+  { id: 'risada', pack: 'doidos', nome: 'Risada', emo: '😂', segs: [400, 370, 340, 310].map((f, i) => ({ t: i * .27, d: .14, f: [f, f - 20], w: 'triangle' })) },
+  { id: 'espirro', pack: 'doidos', nome: 'Espirro', emo: '🤧', segs: [{ t: 0, d: .75, f: [280, 480, 640], w: 'sawtooth' }, { t: .9, d: .22, f: [720, 380], w: 'sawtooth' }] },
+  { id: 'bocejo', pack: 'doidos', nome: 'Bocejo', emo: '🥱', segs: [{ t: 0, d: 1.6, f: [330, 560, 240], w: 'triangle' }] },
+  { id: 'fantasma', pack: 'doidos', nome: 'Fantasma', emo: '👻', segs: [{ t: 0, d: 1.8, f: [300, 340, 280, 330, 250], w: 'sine', v: 12 }] },
+  { id: 'gol', pack: 'doidos', nome: 'Grito de gol', emo: '⚽', segs: [{ t: 0, d: 1.9, f: [330, 450, 450, 470, 380], w: 'sawtooth' }] },
+  { id: 'surpresa', pack: 'doidos', nome: 'Óóóh', emo: '😮', segs: [{ t: 0, d: 1, f: [240, 450, 300], w: 'triangle' }] },
+  { id: 'tcham', pack: 'doidos', nome: 'Tcham tcham tcham', emo: '🎻', segs: [{ t: 0, d: .25, f: [392, 392], w: 'sawtooth' }, { t: .38, d: .25, f: [392, 392], w: 'sawtooth' }, { t: .76, d: .7, f: [311, 311], w: 'sawtooth' }] },
+];
+const PACKS = [{ id: 'tudo', nome: 'Tudo' }, { id: 'bichos', nome: 'Bichos' }, { id: 'maquinas', nome: 'Máquinas' }, { id: 'doidos', nome: 'Doidos' }];
+const soundOf = id => SOUNDS.find(s => s.id === id);
+const soundDur = s => Math.max(...s.segs.map(g => g.t + g.d));
+const recDur = s => Math.max(2.6, soundDur(s) + 1.4);
+
+/* =========================================================
+   ÁUDIO
+   ========================================================= */
+const SR = 12000; // taxa das gravações enviadas
+const A = { ctx: null, stream: null, rec: [], recording: false, level: 0, micError: null };
+
+async function initAudio() {
+  if (!A.ctx) A.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try { await A.ctx.resume(); } catch (e) {}
+  if (A.stream) return true;
+  try {
+    A.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } });
+    const src = A.ctx.createMediaStreamSource(A.stream);
+    const proc = A.ctx.createScriptProcessor(2048, 1, 1);
+    const mute = A.ctx.createGain(); mute.gain.value = 0;
+    src.connect(proc); proc.connect(mute); mute.connect(A.ctx.destination);
+    proc.onaudioprocess = e => {
+      const d = e.inputBuffer.getChannelData(0);
+      let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i];
+      A.level = Math.sqrt(s / d.length);
+      if (A.recording) A.rec.push(new Float32Array(d));
+    };
+    A.src = src; A.proc = proc; A.micError = null;
+    return true;
+  } catch (e) {
+    A.micError = 'Não consegui acessar o microfone. Libere a permissão do navegador e recarregue.';
+    return false;
+  }
+}
+
+function playRef(sound) {
+  const ctx = A.ctx, t0 = ctx.currentTime + 0.06;
+  const master = ctx.createGain(); master.gain.value = 0.22; master.connect(ctx.destination);
+  for (const g of sound.segs) {
+    const osc = ctx.createOscillator(); osc.type = g.w || 'sine';
+    const st = t0 + g.t, n = g.f.length;
+    osc.frequency.setValueAtTime(g.f[0], st);
+    for (let i = 1; i < n; i++) osc.frequency.exponentialRampToValueAtTime(g.f[i], st + g.d * i / (n - 1));
+    if (g.v) {
+      const lfo = ctx.createOscillator(), lg = ctx.createGain();
+      lfo.frequency.value = 6; lg.gain.value = g.v; lfo.connect(lg); lg.connect(osc.frequency);
+      lfo.start(st); lfo.stop(st + g.d + .05);
+    }
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, st);
+    env.gain.linearRampToValueAtTime(1, st + .02);
+    env.gain.setValueAtTime(1, st + Math.max(.03, g.d - .04));
+    env.gain.linearRampToValueAtTime(0, st + g.d);
+    let node = osc;
+    if (g.w === 'square' || g.w === 'sawtooth') { const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; osc.connect(lp); node = lp; }
+    node.connect(env); env.connect(master);
+    osc.start(st); osc.stop(st + g.d + .05);
+  }
+  return sleep(soundDur(sound) * 1000 + 150);
+}
+
+function beep(f = 880, d = .12, vol = .18) {
+  const ctx = A.ctx; if (!ctx) return;
+  const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+  o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + d + .02);
+}
+
+async function recordFor(sec) {
+  A.rec = []; A.recording = true;
+  await sleep(sec * 1000);
+  A.recording = false;
+  const total = A.rec.reduce((a, b) => a + b.length, 0);
+  const all = new Float32Array(total); let o = 0;
+  for (const b of A.rec) { all.set(b, o); o += b.length; }
+  return downsample(all, A.ctx.sampleRate);
+}
+
+function downsample(x, sr) {
+  const ratio = sr / SR, n = Math.floor(x.length / ratio), out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = Math.floor(i * ratio), b = Math.max(a + 1, Math.floor((i + 1) * ratio));
+    let s = 0; for (let j = a; j < b && j < x.length; j++) s += x[j];
+    out[i] = s / (b - a);
+  }
+  return out;
+}
+const toI16 = f => { const o = new Int16Array(f.length); for (let i = 0; i < f.length; i++) o[i] = clamp(f[i], -1, 1) * 32767; return o.buffer; };
+const toF32 = buf => { const a = new Int16Array(buf), o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] / 32767; return o; };
+
+function playFart(dur) {
+  const ctx = A.ctx, t = ctx.currentTime + .03, d = Math.max(.9, Math.min(dur, 3));
+  const out = ctx.createGain(); out.gain.value = .5; out.connect(ctx.destination);
+  const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+  const curve = new Float32Array(32); let f = 85;
+  for (let i = 0; i < 32; i++) { f = clamp(f + (Math.random() - .5) * 30, 45, 120); curve[i] = f; }
+  osc.frequency.setValueCurveAtTime(curve, t, d);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 6;
+  const am = ctx.createGain(); am.gain.value = .6;
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 22; const lg = ctx.createGain(); lg.gain.value = .4;
+  lfo.connect(lg); lg.connect(am.gain);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(1, t + .05);
+  env.gain.setValueAtTime(1, t + d * .7); env.gain.linearRampToValueAtTime(0, t + d);
+  // ruído
+  const nb = ctx.createBuffer(1, ctx.sampleRate * d, ctx.sampleRate), nd = nb.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * .5;
+  const ns = ctx.createBufferSource(); ns.buffer = nb;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 160; bp.Q.value = 1.5;
+  osc.connect(lp); lp.connect(am); ns.connect(bp); bp.connect(am); am.connect(env); env.connect(out);
+  osc.start(t); lfo.start(t); ns.start(t); osc.stop(t + d); lfo.stop(t + d); ns.stop(t + d);
+  return d;
+}
+
+// toca a gravação com (ou sem) sabotagem; devolve duração em segundos
+function playTake(f32, effect) {
+  const ctx = A.ctx;
+  const len = f32 ? f32.length / SR : 1;
+  if (effect === 'pum') return playFart(len);
+  if (!f32 || !f32.length) return 0;
+  let peak = 0; for (let i = 0; i < f32.length; i++) peak = Math.max(peak, Math.abs(f32[i]));
+  const buf = ctx.createBuffer(1, f32.length, SR); buf.getChannelData(0).set(f32);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const norm = ctx.createGain(); norm.gain.value = peak > 0.001 ? Math.min(6, .85 / peak) : 1;
+  const out = ctx.createGain(); out.gain.value = 1; out.connect(ctx.destination);
+  src.connect(norm);
+  const t = ctx.currentTime + .03;
+  let dur = len;
+  if (effect === 'eco') {
+    const dl = ctx.createDelay(1); dl.delayTime.value = .22; const fb = ctx.createGain(); fb.gain.value = .55;
+    norm.connect(out); norm.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(out); dur += 1.2;
+  } else if (effect === 'estourado') {
+    const pre = ctx.createGain(); pre.gain.value = 6;
+    const ws = ctx.createWaveShaper(); const c = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; c[i] = Math.tanh(x * 8) * (Math.random() > .97 ? .6 : 1); }
+    ws.curve = c; const post = ctx.createGain(); post.gain.value = .35;
+    norm.connect(pre); pre.connect(ws); ws.connect(post); post.connect(out);
+  } else if (effect === 'esquilo') {
+    src.playbackRate.value = 1.6; dur = len / 1.6; norm.connect(out);
+  } else if (effect === 'picotado') {
+    const gate = ctx.createGain();
+    for (let k = 0; k * .09 < len; k++) gate.gain.setValueAtTime(k % 2 ? 0 : 1, t + k * .09);
+    norm.connect(gate); gate.connect(out);
+  } else norm.connect(out);
+  src.start(t);
+  return dur;
+}
+
+/* =========================================================
+   ANÁLISE: altura (YIN) + energia, e pontuação
+   ========================================================= */
+const HOP = 0.03;
+function analyze(x) {
+  const W = 512, hopS = Math.round(HOP * SR), tauMin = 8, tauMax = Math.floor(SR / 70), I = W - tauMax;
+  const frames = [];
+  for (let s = 0; s + W <= x.length; s += hopS) {
+    let e = 0; for (let j = 0; j < W; j++) e += x[s + j] * x[s + j];
+    const rms = Math.sqrt(e / W);
+    // YIN
+    const d = new Float32Array(tauMax + 1);
+    for (let tau = 1; tau <= tauMax; tau++) {
+      let sum = 0; for (let j = 0; j < I; j++) { const v = x[s + j] - x[s + j + tau]; sum += v * v; }
+      d[tau] = sum;
+    }
+    let run = 0, p = 0;
+    const cm = new Float32Array(tauMax + 1); cm[0] = 1;
+    for (let tau = 1; tau <= tauMax; tau++) { run += d[tau]; cm[tau] = run ? d[tau] * tau / run : 1; }
+    for (let tau = tauMin; tau < tauMax; tau++) {
+      if (cm[tau] < 0.2) { while (tau + 1 < tauMax && cm[tau + 1] < cm[tau]) tau++; p = SR / tau; break; }
+    }
+    frames.push({ r: rms, p });
+  }
+  const rs = frames.map(f => f.r).sort((a, b) => a - b);
+  const floor = rs[Math.floor(rs.length * .2)] || 0, max = rs[rs.length - 1] || 0;
+  const th = Math.max(floor * 3, max * .12, 0.006);
+  for (const f of frames) { f.a = f.r > th; if (!f.a) f.p = 0; }
+  return frames;
+}
+
+function refFrames(sound) {
+  const dur = soundDur(sound), out = [];
+  for (let t = 0; t < dur; t += HOP) {
+    const g = sound.segs.find(g => t >= g.t && t <= g.t + g.d);
+    if (!g) { out.push({ a: false, p: 0 }); continue; }
+    const u = (t - g.t) / g.d * (g.f.length - 1), i = Math.min(Math.floor(u), g.f.length - 2), k = u - i;
+    const p = g.f.length === 1 ? g.f[0] : g.f[i] * Math.pow(g.f[i + 1] / g.f[i], k);
+    out.push({ a: true, p });
+  }
+  return out;
+}
+
+function segments(fr) {
+  const seg = []; let cur = null, gap = 0;
+  fr.forEach((f, i) => {
+    if (f.a) { if (cur && gap < 2) cur.e = i; else { cur = { s: i, e: i }; seg.push(cur); } gap = 0; }
+    else gap++;
+  });
+  return seg.filter(s => s.e - s.s >= 1);
+}
+const semis = f => 12 * Math.log2(f / 440);
+function resample(a, n) { const o = []; for (let i = 0; i < n; i++) o.push(a[Math.min(a.length - 1, Math.floor(i * a.length / n))]); return o; }
+const median = a => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+
+function scoreTake(sound, usr) {
+  const ref = refFrames(sound);
+  const zero = { score: 0, parts: { m: 0, r: 0, d: 0 } };
+  const first = usr.findIndex(f => f.a);
+  if (first < 0) return zero;
+  let last = usr.length - 1; while (last > first && !usr[last].a) last--;
+  const u = usr.slice(first, last + 1);
+  const rv = ref.filter(f => f.p).map(f => semis(f.p));
+  const uv = u.filter(f => f.p > 0).map(f => semis(f.p));
+  // melodia (forma da curva, independe do tom da voz)
+  let mel = 0;
+  if (uv.length >= 4) {
+    const N = 40, rm = median(rv), um = median(uv);
+    const R = resample(rv, N).map(v => v - rm), U = resample(uv, N).map(v => v - um);
+    let err = 0;
+    for (let i = 0; i < N; i++) { let df = U[i] - R[i]; df = Math.min(Math.abs(df), Math.abs(df - 12), Math.abs(df + 12)); err += df; }
+    err /= N;
+    const voicedShare = clamp(uv.length / Math.max(1, u.filter(f => f.a).length) * 1.4);
+    mel = clamp(1 - (err - 0.4) / 3) * voicedShare;
+  }
+  // ritmo: número de ataques + tempo entre eles
+  const rs = segments(ref), us = segments(u);
+  const nR = rs.length, nU = us.length;
+  const att = nU ? clamp(1 - Math.abs(nU - nR) / Math.max(nR, 1)) : 0;
+  let tim;
+  if (nR >= 2 && nU >= 2) {
+    const span = (rs[nR - 1].s - rs[0].s) || 1; const n = Math.min(nR, nU); let e = 0;
+    for (let i = 1; i < n; i++) e += Math.abs((us[i].s - us[0].s) - (rs[i].s - rs[0].s));
+    tim = clamp(1 - (e / (n - 1)) / span * 1.6);
+  } else tim = nR === nU ? 1 : 0.3;
+  // duração do som
+  const ra = ref.filter(f => f.a).length, ua = u.filter(f => f.a).length;
+  const dur = ua ? Math.min(ra, ua) / Math.max(ra, ua) : 0;
+  const rit = att * .6 + tim * .4;
+  const total = Math.round(1000 * (0.55 * mel + 0.25 * rit + 0.2 * dur));
+  return { score: total, parts: { m: Math.round(mel * 100), r: Math.round(rit * 100), d: Math.round(dur * 100) } };
+}
+
+/* =========================================================
+   REDE (PeerJS) + LÓGICA DO JOGO (anfitrião manda em tudo)
+   ========================================================= */
+const PREFIX = 'imitaai-v1-';
+const WHEEL = [
+  { k: 'p150', l: '+150', c: '#ffd23f' }, { k: 'x2', l: 'x2', c: '#3ee6b0' }, { k: 'sab', l: '😈', c: '#ff5d8f' }, { k: 'p50', l: '+50', c: '#5cc8ff' },
+  { k: 'nada', l: 'Nada', c: '#9b8cc9' }, { k: 'sab', l: '😈', c: '#ff5d8f' }, { k: 'p100', l: '+100', c: '#ffa94d' }, { k: 'x2', l: 'x2', c: '#3ee6b0' },
+];
+const EFFECTS = [
+  { k: 'eco', l: 'Eco', e: '🔁' }, { k: 'estourado', l: 'Estourado', e: '💥' }, { k: 'esquilo', l: 'Esquilo', e: '🐿️' },
+  { k: 'picotado', l: 'Picotado', e: '✂️' }, { k: 'pum', l: 'Pum', e: '💨' },
+];
+const effOf = k => EFFECTS.find(e => e.k === k);
+
+const E = {
+  peer: null, isHost: false, myId: null, code: null, hostConn: null, conns: new Map(),
+  s: null, audios: {}, listeners: new Set(), err: null, status: null,
+  local: { sub: null, count: 0, progress: 0, round: 0, mine: null },
+  listenRound: 0, playKey: null, talking: null, wheelIdx: -1,
+};
+// estado privado do anfitrião
+const H = { takes: {}, pendingSab: {}, sabNow: {}, used: [], timer: null };
+const notify = () => E.listeners.forEach(f => f());
+const me = () => E.s && E.s.players.find(p => p.id === E.myId);
+
+function freshState(code) {
+  return { code, phase: 'lobby', round: 0, total: 5, pack: 'tudo', players: [], soundId: null, submitted: [],
+    reveal: null, playIdx: -1, order: [], wheel: [], wheelIdx: -1, saboteurs: [], sabDone: [], seq: 0 };
+}
+
+function makeCode() { const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; return Array.from({ length: 4 }, () => pick(L)).join(''); }
+
+function createRoom(name, char) {
+  E.err = null; E.status = 'Criando sala…'; notify();
+  const code = makeCode();
+  const peer = new Peer(PREFIX + code, { debug: 0 });
+  E.peer = peer;
+  peer.on('open', id => {
+    E.isHost = true; E.myId = id; E.code = code;
+    E.s = freshState(code);
+    E.s.players.push({ id, name, char, score: 0, mult: 1, on: true, host: true });
+    E.status = null; broadcast();
+  });
+  peer.on('connection', conn => {
+    conn.on('open', () => { E.conns.set(conn.peer, conn); conn.send({ t: 'state', s: E.s }); });
+    conn.on('data', d => hostRecv(conn.peer, d));
+    conn.on('close', () => hostDrop(conn.peer));
+    conn.on('error', () => hostDrop(conn.peer));
+  });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') { peer.destroy(); return createRoom(name, char); }
+    if (!E.s) { E.err = 'Erro ao criar sala (' + e.type + '). Verifique a internet.'; E.status = null; notify(); }
+  });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+}
+
+function joinRoom(code, name, char) {
+  E.err = null; E.status = 'Entrando na sala…'; notify();
+  code = code.toUpperCase().replace(/[^A-Z]/g, '');
+  const peer = new Peer({ debug: 0 });
+  E.peer = peer;
+  const to = setTimeout(() => { if (!E.s) { E.err = 'A sala não respondeu. Confira o código.'; E.status = null; peer.destroy(); notify(); } }, 15000);
+  peer.on('open', id => {
+    E.myId = id;
+    const conn = peer.connect(PREFIX + code, { reliable: true });
+    E.hostConn = conn;
+    conn.on('open', () => conn.send({ t: 'join', name, char }));
+    conn.on('data', d => { clearTimeout(to); clientRecv(d); });
+    conn.on('close', () => { E.err = 'A conexão com a sala caiu (o anfitrião saiu?).'; E.s = null; notify(); });
+  });
+  peer.on('error', e => {
+    clearTimeout(to);
+    E.err = e.type === 'peer-unavailable' ? 'Sala ' + code + ' não encontrada.' : 'Erro de conexão (' + e.type + ').';
+    E.status = null; E.s = null; notify();
+  });
+}
+
+function send(msg) { if (E.isHost) hostRecv(E.myId, msg); else if (E.hostConn && E.hostConn.open) E.hostConn.send(msg); }
+
+function clientRecv(d) {
+  if (d.t === 'state') { E.status = null; onState(d.s); }
+  else if (d.t === 'audio') E.audios[d.pid] = { round: d.round, pcm: d.pcm };
+}
+
+function broadcast() {
+  const s = E.s; s.seq++;
+  for (const c of E.conns.values()) if (c.open) c.send({ t: 'state', s });
+  onState(s);
+}
+
+function hostRecv(pid, d) {
+  const s = E.s; if (!s) return;
+  const p = s.players.find(p => p.id === pid);
+  if (d.t === 'join') {
+    const name = String(d.name || 'Alguém').slice(0, 14);
+    let char = CHARS.some(c => c.id === d.char) ? d.char : CHARS[0].id;
+    if (p) { p.on = true; p.name = name; }
+    else {
+      if (s.players.some(q => q.char === char)) { const free = CHARS.find(c => !s.players.some(q => q.char === c.id)); if (free) char = free.id; }
+      if (s.players.length >= 8) return;
+      s.players.push({ id: pid, name, char, score: 0, mult: 1, on: true });
+    }
+    broadcast();
+  } else if (d.t === 'char' && p && s.phase === 'lobby') {
+    if (!s.players.some(q => q.char === d.char && q.id !== pid) && CHARS.some(c => c.id === d.char)) { p.char = d.char; broadcast(); }
+  } else if (d.t === 'take' && p) hostTake(pid, d);
+  else if (d.t === 'sab' && p) hostSab(pid, d);
+}
+
+function hostDrop(pid) {
+  E.conns.delete(pid);
+  const s = E.s; if (!s) return;
+  const i = s.players.findIndex(p => p.id === pid);
+  if (i < 0) return;
+  if (s.phase === 'lobby') s.players.splice(i, 1); else s.players[i].on = false;
+  broadcast();
+  if (s.phase === 'listen') checkAllTakes();
+  if (s.phase === 'sabotage') checkAllSab();
+}
+
+function setTimer(ms, fn) { clearTimeout(H.timer); H.timer = setTimeout(fn, ms); }
+
+function hostStart() {
+  const s = E.s;
+  s.players.forEach(p => { p.score = 0; p.mult = 1; p.last = null; });
+  s.round = 0; H.used = []; H.pendingSab = {};
+  startRound();
+}
+
+function startRound() {
+  const s = E.s;
+  s.round++;
+  let pool = SOUNDS.filter(x => (s.pack === 'tudo' || x.pack === s.pack) && !H.used.includes(x.id));
+  if (!pool.length) { H.used = []; pool = SOUNDS.filter(x => s.pack === 'tudo' || x.pack === s.pack); }
+  const snd = pick(pool); H.used.push(snd.id);
+  s.soundId = snd.id; s.phase = 'listen'; s.submitted = []; s.reveal = null; s.playIdx = -1; s.wheel = []; s.wheelIdx = -1;
+  H.takes = {}; H.sabNow = H.pendingSab; H.pendingSab = {};
+  broadcast();
+  const total = soundDur(snd) * 2 + 0.75 + 0.5 + 3 + recDur(snd) + 12;
+  setTimer(total * 1000, toPlayback);
+}
+
+function hostTake(pid, d) {
+  const s = E.s;
+  if (s.phase !== 'listen' || d.round !== s.round || H.takes[pid]) return;
+  H.takes[pid] = { score: clamp(+d.score || 0, 0, 1000) | 0, parts: d.parts || { m: 0, r: 0, d: 0 }, len: d.len || 0 };
+  E.audios[pid] = { round: d.round, pcm: d.pcm };
+  for (const [id, c] of E.conns) if (c.open && id !== pid) c.send({ t: 'audio', pid, round: d.round, pcm: d.pcm });
+  s.submitted.push(pid);
+  broadcast();
+  checkAllTakes();
+}
+function checkAllTakes() {
+  const s = E.s;
+  if (s.phase === 'listen' && s.players.filter(p => p.on).every(p => H.takes[p.id])) setTimer(600, toPlayback);
+}
+
+function toPlayback() {
+  const s = E.s; if (s.phase !== 'listen') return;
+  s.phase = 'playback'; s.order = s.players.filter(p => p.on || H.takes[p.id]).map(p => p.id); s.playIdx = -1;
+  nextPlay();
+}
+function nextPlay() {
+  const s = E.s; s.playIdx++;
+  if (s.playIdx >= s.order.length) return afterPlayback();
+  const pid = s.order[s.playIdx], p = s.players.find(q => q.id === pid);
+  const t = H.takes[pid] || { score: 0, parts: { m: 0, r: 0, d: 0 }, len: 0 };
+  const sab = H.sabNow[pid];
+  const mult = p.mult || 1;
+  const pts = Math.max(0, t.score * mult - (sab ? 50 : 0));
+  p.score += pts; p.mult = 1;
+  p.last = { pts, base: t.score };
+  s.reveal = { pid, base: t.score, mult, pts, parts: t.parts, len: t.len, sab: sab ? { e: sab.effect, by: sab.by } : null };
+  broadcast();
+  let dur = t.len / SR; if (sab && sab.effect === 'esquilo') dur /= 1.6; if (sab && sab.effect === 'eco') dur += 1.2;
+  setTimer((Math.max(dur, 1.2) + 3.4) * 1000, nextPlay);
+}
+function afterPlayback() {
+  const s = E.s;
+  if (s.round >= s.total) { s.phase = 'final'; s.reveal = null; return broadcast(); }
+  s.phase = 'wheel'; s.reveal = null;
+  const solo = s.players.filter(p => p.on).length < 2;
+  s.wheel = s.players.filter(p => p.on).map(p => {
+    let i = Math.floor(Math.random() * WHEEL.length);
+    while (solo && WHEEL[i].k === 'sab') i = Math.floor(Math.random() * WHEEL.length);
+    return { pid: p.id, i };
+  });
+  s.wheelIdx = 0; s.saboteurs = []; s.sabDone = [];
+  broadcast();
+  setTimer(3700, wheelStep);
+}
+function wheelStep() {
+  const s = E.s, w = s.wheel[s.wheelIdx];
+  if (w) {
+    const p = s.players.find(q => q.id === w.pid), k = WHEEL[w.i].k;
+    if (p) {
+      if (k === 'p150') p.score += 150; else if (k === 'p100') p.score += 100; else if (k === 'p50') p.score += 50;
+      else if (k === 'x2') p.mult = 2; else if (k === 'sab') s.saboteurs.push(p.id);
+    }
+  }
+  s.wheelIdx++;
+  if (s.wheelIdx < s.wheel.length) { broadcast(); return setTimer(3700, wheelStep); }
+  if (s.saboteurs.length) { s.phase = 'sabotage'; broadcast(); return setTimer(20000, finishSab); }
+  startRound();
+}
+function hostSab(pid, d) {
+  const s = E.s;
+  if (s.phase !== 'sabotage' || !s.saboteurs.includes(pid) || s.sabDone.includes(pid)) return;
+  if (!s.players.some(p => p.id === d.victim) || d.victim === pid || !effOf(d.effect)) return;
+  H.pendingSab[d.victim] = { effect: d.effect, by: pid };
+  s.sabDone.push(pid); broadcast(); checkAllSab();
+}
+function checkAllSab() {
+  const s = E.s; if (s.phase !== 'sabotage') return;
+  if (s.saboteurs.every(id => s.sabDone.includes(id) || !s.players.find(p => p.id === id && p.on))) setTimer(500, startRound);
+}
+function finishSab() {
+  const s = E.s; if (s.phase !== 'sabotage') return;
+  for (const id of s.saboteurs) if (!s.sabDone.includes(id)) {
+    const others = s.players.filter(p => p.on && p.id !== id);
+    if (others.length) H.pendingSab[pick(others).id] = { effect: pick(EFFECTS).k, by: id };
+  }
+  startRound();
+}
+function hostToLobby() { clearTimeout(H.timer); const s = E.s; s.phase = 'lobby'; s.round = 0; s.reveal = null; s.players = s.players.filter(p => p.on); broadcast(); }
+
+/* ---------- lado de cada jogador ---------- */
+function onState(s) {
+  E.s = s;
+  if (s.phase === 'listen' && s.round !== E.listenRound) { E.listenRound = s.round; runListen(s.soundId, s.round); }
+  if (s.phase === 'playback' && s.reveal) {
+    const key = s.round + ':' + s.playIdx;
+    if (key !== E.playKey) { E.playKey = key; playReveal(s.reveal, s.round); }
+  }
+  notify();
+}
+
+async function runListen(soundId, round) {
+  const L = E.local, snd = soundOf(soundId);
+  L.round = round; L.mine = null;
+  const set = (sub, extra = {}) => { Object.assign(L, { sub }, extra); notify(); };
+  try { await A.ctx.resume(); } catch (e) {}
+  await sleep(400);
+  set('ouca1'); await playRef(snd);
+  await sleep(600);
+  set('ouca2'); await playRef(snd);
+  await sleep(400);
+  for (let i = 3; i >= 1; i--) { set('conta', { count: i }); beep(i === 1 ? 990 : 660); await sleep(800); }
+  beep(1320, .2);
+  const rd = recDur(snd);
+  set('grava', { progress: 0, recStart: Date.now(), recDur: rd });
+  const tick = setInterval(() => { L.progress = clamp((Date.now() - L.recStart) / (rd * 1000)); notify(); }, 80);
+  let pcm = new Float32Array(0);
+  if (A.stream) pcm = await recordFor(rd); else await sleep(rd * 1000);
+  clearInterval(tick);
+  set('analisa');
+  await sleep(50);
+  const res = pcm.length ? scoreTake(snd, analyze(pcm)) : { score: 0, parts: { m: 0, r: 0, d: 0 } };
+  L.mine = res;
+  const buf = toI16(pcm);
+  E.audios[E.myId] = { round, pcm: buf };
+  send({ t: 'take', round, score: res.score, parts: res.parts, len: pcm.length, pcm: buf });
+  set('espera');
+}
+
+function playReveal(rv, round) {
+  if (!A.ctx) return;
+  const a = E.audios[rv.pid];
+  const f32 = a && a.round === round ? toF32(a.pcm) : null;
+  setTimeout(() => {
+    const eff = rv.sab ? rv.sab.e : null;
+    const d = (f32 && f32.length) || eff === 'pum' ? playTake(f32, eff) : 0;
+    E.talking = rv.pid; notify();
+    setTimeout(() => { if (E.talking === rv.pid) { E.talking = null; notify(); } }, Math.max(d, .3) * 1000);
+  }, 250);
+}
+
+/* =========================================================
+   INTERFACE (React)
+   ========================================================= */
+function useEngine() {
+  const [, setV] = useState(0);
+  useEffect(() => { const f = () => setV(v => v + 1); E.listeners.add(f); return () => E.listeners.delete(f); }, []);
+}
+
+function Home() {
+  const params = new URLSearchParams(location.search);
+  const [name, setName] = useState(() => { try { return localStorage.getItem('imita.nome') || ''; } catch (e) { return ''; } });
+  const [char, setChar] = useState(() => { try { return localStorage.getItem('imita.char') || 'pudim'; } catch (e) { return 'pudim'; } });
+  const [code, setCode] = useState((params.get('sala') || '').toUpperCase());
+  const busy = !!E.status;
+  const save = () => { try { localStorage.setItem('imita.nome', name); localStorage.setItem('imita.char', char); } catch (e) {} };
+  const go = async (create) => {
+    if (!name.trim()) { E.err = 'Coloca seu nome primeiro 🙂'; notify(); return; }
+    save();
+    await initAudio();
+    try { navigator.wakeLock && navigator.wakeLock.request('screen'); } catch (e) {}
+    if (create) createRoom(name.trim(), char); else joinRoom(code, name.trim(), char);
+  };
+  return html`<div className="app">
+    <div style=${{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 8 }}>
+      ${['bolota', 'pudim', 'gota'].map((c, i) => html`<${Critter} key=${c} id=${c} size=${i === 1 ? 84 : 64} idle/>`)}
+    </div>
+    <h1>Imita <span>Aí!</span></h1>
+    <p className="sub">Ouviu o som? Uma chance só pra imitar. Sem ensaio, sem piedade.</p>
+    ${E.err && html`<div className="err">${E.err}</div>`}
+    <div className="card col">
+      <label>Seu nome</label>
+      <input value=${name} maxLength="14" placeholder="Ex.: Cícero" onInput=${e => setName(e.target.value)}/>
+      <label>Escolha seu bonequinho</label>
+      <div className="chars">
+        ${CHARS.map(c => html`<button key=${c.id} className=${'charbtn' + (char === c.id ? ' sel' : '')} onClick=${() => setChar(c.id)}>
+          <${Critter} id=${c.id} size=${56} idle=${char === c.id}/><div>${c.nome}</div></button>`)}
+      </div>
+    </div>
+    <button className="btn" disabled=${busy} onClick=${() => go(true)}>🎉 Criar sala</button>
+    <div className="card col">
+      <label>Tem um código?</label>
+      <div className="row">
+        <input className="grow" value=${code} maxLength="4" placeholder="ABCD" style=${{ textTransform: 'uppercase', letterSpacing: 4, textAlign: 'center' }}
+          onInput=${e => setCode(e.target.value.toUpperCase())}/>
+        <button className="btn pink" disabled=${busy || code.length !== 4} onClick=${() => go(false)}>Entrar</button>
+      </div>
+    </div>
+    ${E.status && html`<p className="small">${E.status}</p>`}
+    <p className="small">Use fone de ouvido 🎧 e chame a galera numa call pra ouvir as reações.</p>
+  </div>`;
+}
+
+function Lobby() {
+  const s = E.s, meP = me();
+  const link = location.origin + location.pathname + '?sala=' + s.code;
+  const share = async () => {
+    try { if (navigator.share) await navigator.share({ title: 'Imita Aí!', text: 'Entra na minha sala do Imita Aí! Código ' + s.code, url: link }); else { await navigator.clipboard.writeText(link); alert('Link copiado!'); } } catch (e) {}
+  };
+  const setOpt = (k, v) => { s[k] = v; broadcast(); };
+  return html`<div className="app">
+    <div className="card" style=${{ textAlign: 'center' }}>
+      <div className="hint">Código da sala</div>
+      <div className="code">${s.code}</div>
+      <button className="btn ghost" style=${{ marginTop: 10, fontSize: 16, padding: '8px 14px' }} onClick=${share}>📨 Convidar amigos</button>
+    </div>
+    ${A.micError && html`<div className="err">${A.micError}</div>`}
+    <div className="card col">
+      <h2>Jogadores (${s.players.length}/8)</h2>
+      <div className="players">
+        ${s.players.map(p => html`<div key=${p.id} className="pl">
+          <${Critter} id=${p.char} size=${60} idle/>${p.name}
+          ${p.host && html`<span className="tag">anfitrião</span>`}${p.id === E.myId && !p.host && html`<span className="tag">você</span>`}</div>`)}
+      </div>
+    </div>
+    ${E.isHost ? html`<div className="card col">
+      <label>Rodadas</label>
+      <div className="seg">${[3, 5, 7].map(n => html`<button key=${n} className=${s.total === n ? 'on' : ''} onClick=${() => setOpt('total', n)}>${n}</button>`)}</div>
+      <label>Pacote de sons</label>
+      <div className="seg">${PACKS.map(p => html`<button key=${p.id} className=${s.pack === p.id ? 'on' : ''} onClick=${() => setOpt('pack', p.id)}>${p.nome}</button>`)}</div>
+    </div>
+    <button className="btn mint" onClick=${hostStart}>▶️ Começar${s.players.length < 2 ? ' (sozinho)' : ''}</button>`
+    : html`<div className="card col">
+      <label>Trocar bonequinho</label>
+      <div className="chars">${CHARS.map(c => {
+        const taken = s.players.some(p => p.char === c.id && p.id !== E.myId);
+        return html`<button key=${c.id} className=${'charbtn' + (meP && meP.char === c.id ? ' sel' : '') + (taken ? ' taken' : '')} disabled=${taken}
+          onClick=${() => send({ t: 'char', char: c.id })}><${Critter} id=${c.id} size=${48}/><div>${c.nome}</div></button>`;
+      })}</div>
+      <p className="small">Esperando o anfitrião começar… ${s.total} rodadas · ${PACKS.find(p => p.id === s.pack).nome}</p>
+    </div>`}
+  </div>`;
+}
+
+function Scoreboard({ highlight }) {
+  const ps = [...E.s.players].sort((a, b) => b.score - a.score);
+  return html`<div className="scores">${ps.map(p => html`<div key=${p.id} className=${'sc' + (p.id === E.myId ? ' me' : '')}>
+    <${Critter} id=${p.char} size=${36} talk=${E.talking === p.id}/>
+    <span className=${p.on ? '' : 'hint'}>${p.name}${p.mult > 1 ? ' ⚡x2' : ''}</span>
+    <span className="pts">${p.score}</span></div>`)}</div>`;
+}
+
+function CountUp({ to, ms = 900 }) {
+  const [v, setV] = useState(0);
+  useEffect(() => { let raf, t0 = performance.now(); const f = t => { const k = clamp((t - t0) / ms); setV(Math.round(to * (1 - Math.pow(1 - k, 3)))); if (k < 1) raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); return () => cancelAnimationFrame(raf); }, [to]);
+  return v;
+}
+
+function ListenView() {
+  const s = E.s, L = E.local, snd = soundOf(s.soundId), meP = me();
+  const sub = L.round === s.round ? L.sub : 'ouca1';
+  let body;
+  if (sub === 'ouca1' || sub === 'ouca2') body = html`
+    <div className="pop" style=${{ fontSize: 80 }}>${snd.emo}</div>
+    <div className="huge">${snd.nome}</div>
+    <div className="hint">${sub === 'ouca1' ? '🔊 Ouça com atenção…' : '🔁 Mais uma vez…'}</div>`;
+  else if (sub === 'conta') body = html`
+    <div className="hint">Prepara a garganta!</div>
+    <div className="big pop" key=${L.count}>${L.count}</div>
+    <${Critter} id=${meP ? meP.char : 'pudim'} size=${110} idle/>`;
+  else if (sub === 'grava') body = html`
+    <span className="rec">● IMITA AGORA!</span>
+    <${Critter} id=${meP ? meP.char : 'pudim'} size=${150} talk=${A.level > 0.03}/>
+    <div className="meter"><div style=${{ width: clamp(A.level * 900, 0, 100) + '%' }}></div></div>
+    <div className="bar"><div style=${{ width: (L.progress * 100) + '%' }}></div></div>
+    ${!A.stream && html`<div className="err">Sem microfone — sua imitação vai sair muda.</div>`}`;
+  else body = html`
+    <div className="huge">${sub === 'analisa' ? 'Analisando…' : 'Gravado! ✅'}</div>
+    <div className="hint">Esperando os outros imitarem…</div>
+    <div className="players" style=${{ width: '100%' }}>${s.players.filter(p => p.on).map(p => html`<div key=${p.id} className="pl">
+      ${s.submitted.includes(p.id) && html`<span className="ok">✅</span>`}
+      <${Critter} id=${p.char} size=${54} mood=${s.submitted.includes(p.id) ? 'smile' : 'sad'}/>${p.name}</div>`)}</div>`;
+  return html`<div className="stage">${body}</div>`;
+}
+
+function PlaybackView() {
+  const s = E.s, rv = s.reveal; if (!rv) return null;
+  const p = s.players.find(q => q.id === rv.pid) || {};
+  const by = rv.sab && s.players.find(q => q.id === rv.sab.by);
+  const ef = rv.sab && effOf(rv.sab.e);
+  return html`<div className="stage" key=${s.playIdx}>
+    <div className="hint">Take ${s.playIdx + 1} de ${s.order.length}</div>
+    <div className="huge">${p.name}${p.id === E.myId ? ' (você)' : ''}</div>
+    <${Critter} id=${p.char} size=${170} talk=${E.talking === rv.pid}/>
+    ${rv.sab && html`<div className="sab pop">${ef.e} ${ef.l}! Sabotado por ${by ? by.name : 'alguém'} (−50)</div>`}
+    ${E.talking !== rv.pid && html`<div className="pop col" style=${{ alignItems: 'center', gap: 6 }}>
+      <div className="big" style=${{ fontSize: 64 }}><${CountUp} to=${rv.pts}/></div>
+      ${rv.mult > 1 && html`<div className="pill">⚡ x2 aplicado</div>`}
+      <div className="parts"><span>🎵 Melodia ${rv.parts.m}%</span><span>🥁 Ritmo ${rv.parts.r}%</span><span>⏱️ Duração ${rv.parts.d}%</span></div>
+      <div className="hint">${rv.base >= 800 ? 'Idêntico! 🤯' : rv.base >= 600 ? 'Mandou bem!' : rv.base >= 350 ? 'Quase lá…' : rv.base > 0 ? 'Hmm… criativo 😅' : 'Silêncio total 🦗'}</div>
+    </div>`}
+  </div>`;
+}
+
+function Wheel({ idx, target }) {
+  const [rot, setRot] = useState(0);
+  useEffect(() => { setRot(0); const t = setTimeout(() => setRot(360 * 6 - (target * 45 + 22.5) + (Math.random() * 20 - 10)), 60); return () => clearTimeout(t); }, [idx]);
+  const R = 140;
+  return html`<div className="wheelwrap"><div className="pointer"></div>
+    <svg className="wheel" viewBox="0 0 280 280" style=${{ transform: `rotate(${rot}deg)`, transition: rot === 0 ? 'none' : undefined }}>
+      ${WHEEL.map((w, i) => {
+        const a0 = (i * 45 - 90) * Math.PI / 180, a1 = ((i + 1) * 45 - 90) * Math.PI / 180, am = (a0 + a1) / 2;
+        const x0 = R + R * Math.cos(a0), y0 = R + R * Math.sin(a0), x1 = R + R * Math.cos(a1), y1 = R + R * Math.sin(a1);
+        const tx = R + R * .66 * Math.cos(am), ty = R + R * .66 * Math.sin(am);
+        return html`<g key=${i}><path d=${`M${R} ${R} L${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}Z`} fill=${w.c} stroke="#24154a" strokeWidth="3"/>
+          <text x=${tx} y=${ty} fill="#24154a" fontSize="22" fontWeight="800" textAnchor="middle" dominantBaseline="middle"
+            transform=${`rotate(${i * 45 + 22.5} ${tx} ${ty})`} fontFamily="Baloo 2, sans-serif">${w.l}</text></g>`;
+      })}
+      <circle cx=${R} cy=${R} r="22" fill="#fff" stroke="#24154a" strokeWidth="4"/>
+    </svg></div>`;
+}
+
+const WHEEL_TXT = { p150: 'ganhou +150!', p100: 'ganhou +100!', p50: 'ganhou +50!', x2: 'vai valer DOBRADO na próxima! ⚡', nada: 'não ganhou nada 😶', sab: 'vai SABOTAR alguém! 😈' };
+function WheelView() {
+  const s = E.s;
+  const [done, setDone] = useState(false);
+  useEffect(() => { setDone(false); const t = setTimeout(() => setDone(true), 3000); return () => clearTimeout(t); }, [s.wheelIdx]);
+  const w = s.wheel[Math.min(s.wheelIdx, s.wheel.length - 1)]; if (!w) return null;
+  const p = s.players.find(q => q.id === w.pid) || {};
+  return html`<div className="stage">
+    <div className="huge">🎡 Roleta de ${p.name}${p.id === E.myId ? ' (você)' : ''}</div>
+    <${Wheel} idx=${s.wheelIdx} target=${w.i}/>
+    <div className="huge" style=${{ minHeight: 44, color: 'var(--yellow)' }}>${done ? html`<span className="pop" style=${{ display: 'inline-block' }}>${p.name} ${WHEEL_TXT[WHEEL[w.i].k]}</span>` : '…'}</div>
+  </div>`;
+}
+
+function SabotageView() {
+  const s = E.s;
+  const mine = s.saboteurs.includes(E.myId) && !s.sabDone.includes(E.myId);
+  const [victim, setVictim] = useState(null);
+  const [eff, setEff] = useState(null);
+  if (!mine) {
+    const names = s.saboteurs.filter(id => !s.sabDone.includes(id)).map(id => (s.players.find(p => p.id === id) || {}).name).filter(Boolean);
+    return html`<div className="stage"><div style=${{ fontSize: 80 }}>😈</div>
+      <div className="huge">${names.length ? names.join(' e ') + (names.length > 1 ? ' estão' : ' está') + ' escolhendo uma vítima…' : 'Preparando a próxima rodada…'}</div>
+      <div className="hint">Você só vai descobrir quando seu take tocar.</div></div>`;
+  }
+  const others = s.players.filter(p => p.on && p.id !== E.myId);
+  return html`<div className="col">
+    <h2 style=${{ textAlign: 'center' }}>😈 Hora da sabotagem!</h2>
+    <div className="card col"><label>Quem vai sofrer?</label>
+      <div className="victims">${others.map(p => html`<button key=${p.id} className=${victim === p.id ? 'on' : ''} onClick=${() => setVictim(p.id)}>
+        <${Critter} id=${p.char} size=${40}/>${p.name}</button>`)}</div></div>
+    <div className="card col"><label>Como vai ficar o take dela(e)?</label>
+      <div className="effects">${EFFECTS.map(e => html`<button key=${e.k} className=${eff === e.k ? 'on' : ''} onClick=${() => setEff(e.k)}>
+        <div style=${{ fontSize: 26 }}>${e.e}</div>${e.l}</button>`)}</div></div>
+    <button className="btn pink" disabled=${!victim || !eff} onClick=${() => send({ t: 'sab', victim, effect: eff })}>Sabotar!</button>
+    <p className="small">Se não escolher em 20s, a roleta escolhe por você.</p>
+  </div>`;
+}
+
+function FinalView() {
+  const s = E.s, ps = [...s.players].sort((a, b) => b.score - a.score);
+  const order = [ps[1], ps[0], ps[2]];
+  const hts = [110, 150, 80];
+  return html`<div className="col">
+    <h1 style=${{ fontSize: 38 }}>🏆 Fim de jogo!</h1>
+    <div className="podium">${order.map((p, i) => p && html`<div key=${p.id} className="p">
+      <${Critter} id=${p.char} size=${i === 1 ? 96 : 72} talk=${i === 1}/>
+      <div>${p.name}</div><div style=${{ color: 'var(--yellow)' }}>${p.score}</div>
+      <div className="blk" style=${{ height: hts[i] }}>${['🥈', '🥇', '🥉'][i]}</div></div>`)}</div>
+    <${Scoreboard}/>
+    ${E.isHost ? html`<button className="btn mint" onClick=${hostStart}>🔁 Jogar de novo</button>
+      <button className="btn ghost" onClick=${hostToLobby}>Voltar pra sala</button>`
+      : html`<p className="small">Esperando o anfitrião decidir a revanche…</p>`}
+  </div>`;
+}
+
+function Game() {
+  const s = E.s, meP = me();
+  const titles = { listen: 'Imite!', playback: 'Hora de ouvir 👂', wheel: 'Roleta', sabotage: 'Sabotagem', final: '' };
+  return html`<div className="app">
+    ${s.phase !== 'final' && html`<div className="top">
+      <span className="pill">Rodada ${s.round}/${s.total}</span>
+      <span>${titles[s.phase]}</span>
+      <span className="pill">⭐ ${meP ? meP.score : 0}</span></div>`}
+    ${s.phase === 'listen' && html`<${ListenView}/>`}
+    ${s.phase === 'playback' && html`<${PlaybackView}/>`}
+    ${s.phase === 'wheel' && html`<${WheelView}/>`}
+    ${s.phase === 'sabotage' && html`<${SabotageView}/>`}
+    ${s.phase === 'final' && html`<${FinalView}/>`}
+    ${(s.phase === 'playback' || s.phase === 'wheel') && html`<${Scoreboard}/>`}
+  </div>`;
+}
+
+function App() {
+  useEngine();
+  useEffect(() => { const i = setInterval(() => { if (E.local.sub === 'grava') notify(); }, 80); return () => clearInterval(i); }, []);
+  if (!E.s) return html`<${Home}/>`;
+  if (E.s.phase === 'lobby') return html`<${Lobby}/>`;
+  return html`<${Game}/>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
+</script>
+</body>
+</html>

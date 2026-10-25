@@ -202,9 +202,16 @@ const SOUNDS = [
   { id: 'surpresa', pack: 'doidos', nome: 'Óóóh', emo: '😮', segs: [{ t: 0, d: 1, f: [240, 450, 300], w: 'triangle' }] },
   { id: 'tcham', pack: 'doidos', nome: 'Tcham tcham tcham', emo: '🎻', segs: [{ t: 0, d: .25, f: [392, 392], w: 'sawtooth' }, { t: .38, d: .25, f: [392, 392], w: 'sawtooth' }, { t: .76, d: .7, f: [311, 311], w: 'sawtooth' }] },
 ];
-const PACKS = [{ id: 'tudo', nome: 'Tudo' }, { id: 'bichos', nome: 'Bichos' }, { id: 'maquinas', nome: 'Máquinas' }, { id: 'doidos', nome: 'Doidos' }];
-const soundOf = id => SOUNDS.find(s => s.id === id);
-const soundDur = s => Math.max(...s.segs.map(g => g.t + g.d));
+const PACKS = [{ id: 'tudo', nome: 'Tudo' }, { id: 'memes', nome: 'Memes' }, { id: 'bichos', nome: 'Bichos' }, { id: 'maquinas', nome: 'Máquinas' }, { id: 'doidos', nome: 'Doidos' }];
+// ---------- memes: sons carregados pelo anfitrião ----------
+const MEMES = [];   // memes salvos neste aparelho (anfitrião)
+const CLIPS = {};   // todos os clipes conhecidos (inclui os recebidos do anfitrião)
+function makeClip(id, nome, f32) {
+  const c = { id, nome, emo: '🎭', pack: 'memes', pcm: f32, dur: f32.length / SR, frames: analyze(f32) };
+  CLIPS[id] = c; return c;
+}
+const soundOf = id => SOUNDS.find(s => s.id === id) || CLIPS[id];
+const soundDur = s => s.pcm ? s.dur : Math.max(...s.segs.map(g => g.t + g.d));
 const recDur = s => Math.max(2.6, soundDur(s) + 1.4);
 
 /* =========================================================
@@ -239,6 +246,14 @@ async function initAudio() {
 
 function playRef(sound) {
   const ctx = A.ctx, t0 = ctx.currentTime + 0.06;
+  if (sound.pcm) {
+    let peak = 0; for (let i = 0; i < sound.pcm.length; i++) peak = Math.max(peak, Math.abs(sound.pcm[i]));
+    const buf = ctx.createBuffer(1, sound.pcm.length, SR); buf.getChannelData(0).set(sound.pcm);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const g = ctx.createGain(); g.gain.value = peak > 0.001 ? Math.min(6, .8 / peak) : 1;
+    src.connect(g); g.connect(ctx.destination); src.start(t0);
+    return sleep(sound.dur * 1000 + 150);
+  }
   const master = ctx.createGain(); master.gain.value = 0.22; master.connect(ctx.destination);
   for (const g of sound.segs) {
     const osc = ctx.createOscillator(); osc.type = g.w || 'sine';
@@ -290,6 +305,39 @@ function downsample(x, sr) {
   return out;
 }
 const toI16 = f => { const o = new Int16Array(f.length); for (let i = 0; i < f.length; i++) o[i] = clamp(f[i], -1, 1) * 32767; return o.buffer; };
+function decodeMeme(file) {
+  return new Promise(async (res, rej) => {
+    try {
+      const ab = await file.arrayBuffer();
+      A.ctx.decodeAudioData(ab, buf => {
+        const n = buf.length, mono = new Float32Array(n);
+        for (let ch = 0; ch < buf.numberOfChannels; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < n; i++) mono[i] += d[i] / buf.numberOfChannels; }
+        let x = downsample(mono, buf.sampleRate);
+        // corta silêncio do começo e do fim
+        const w = Math.round(SR * .02); let peak = 0; for (let i = 0; i < x.length; i++) peak = Math.max(peak, Math.abs(x[i]));
+        const loud = i => { let m = 0; for (let j = i; j < i + w && j < x.length; j++) m = Math.max(m, Math.abs(x[j])); return m > peak * .08; };
+        let a = 0; while (a < x.length && !loud(a)) a += w;
+        let b = x.length - w; while (b > a && !loud(b)) b -= w;
+        x = x.slice(Math.max(0, a - w), Math.min(x.length, b + 2 * w, a + SR * 4));
+        const f = Math.min(x.length, Math.round(SR * .03)); for (let i = 0; i < f; i++) x[x.length - 1 - i] *= i / f;
+        res(x);
+      }, rej);
+    } catch (e) { rej(e); }
+  });
+}
+function idb() {
+  return new Promise((res, rej) => { const r = indexedDB.open('imitaai', 1); r.onupgradeneeded = () => r.result.createObjectStore('memes', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+}
+async function dbTx(mode, fn) { const db = await idb(); return new Promise((res, rej) => { const tx = db.transaction('memes', mode); const out = fn(tx.objectStore('memes')); tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error); }); }
+const dbPut = v => dbTx('readwrite', st => st.put(v));
+const dbDel = id => dbTx('readwrite', st => st.delete(id));
+async function loadMemes() {
+  try {
+    const all = await dbTx('readonly', st => st.getAll());
+    for (const m of all || []) if (!CLIPS[m.id]) MEMES.push(makeClip(m.id, m.nome, toF32(m.pcm)));
+    MEMES.sort((a, b) => a.id < b.id ? -1 : 1);
+  } catch (e) {}
+}
 const toF32 = buf => { const a = new Int16Array(buf), o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] / 32767; return o; };
 
 function playFart(dur) {
@@ -382,6 +430,7 @@ function analyze(x) {
 }
 
 function refFrames(sound) {
+  if (sound.frames) return sound.frames;
   const dur = soundDur(sound), out = [];
   for (let t = 0; t < dur; t += HOP) {
     const g = sound.segs.find(g => t >= g.t && t <= g.t + g.d);
@@ -416,7 +465,8 @@ function scoreTake(sound, usr) {
   const uv = u.filter(f => f.p > 0).map(f => semis(f.p));
   // melodia (forma da curva, independe do tom da voz)
   let mel = 0;
-  if (uv.length >= 4) {
+  const noMel = rv.length < 4; // som sem melodia clara (ruído, batida): conta só ritmo e duração
+  if (!noMel && uv.length >= 4) {
     const N = 40, rm = median(rv), um = median(uv);
     const R = resample(rv, N).map(v => v - rm), U = resample(uv, N).map(v => v - um);
     let err = 0;
@@ -439,6 +489,7 @@ function scoreTake(sound, usr) {
   const ra = ref.filter(f => f.a).length, ua = u.filter(f => f.a).length;
   const dur = ua ? Math.min(ra, ua) / Math.max(ra, ua) : 0;
   const rit = att * .6 + tim * .4;
+  if (noMel) mel = rit * .6 + dur * .4;
   const total = Math.round(1000 * (0.55 * mel + 0.25 * rit + 0.2 * dur));
   return { score: total, parts: { m: Math.round(mel * 100), r: Math.round(rit * 100), d: Math.round(dur * 100) } };
 }
@@ -525,6 +576,7 @@ function send(msg) { if (E.isHost) hostRecv(E.myId, msg); else if (E.hostConn &&
 function clientRecv(d) {
   if (d.t === 'state') { E.status = null; onState(d.s); }
   else if (d.t === 'audio') E.audios[d.pid] = { round: d.round, pcm: d.pcm };
+  else if (d.t === 'clip' && !CLIPS[d.id]) makeClip(d.id, String(d.nome || 'Meme').slice(0, 30), toF32(d.pcm));
 }
 
 function broadcast() {
@@ -575,9 +627,12 @@ function hostStart() {
 function startRound() {
   const s = E.s;
   s.round++;
-  let pool = SOUNDS.filter(x => (s.pack === 'tudo' || x.pack === s.pack) && !H.used.includes(x.id));
-  if (!pool.length) { H.used = []; pool = SOUNDS.filter(x => s.pack === 'tudo' || x.pack === s.pack); }
+  const all = [...SOUNDS, ...MEMES];
+  let pool = all.filter(x => (s.pack === 'tudo' || x.pack === s.pack) && !H.used.includes(x.id));
+  if (!pool.length) { H.used = []; pool = all.filter(x => s.pack === 'tudo' || x.pack === s.pack); }
+  if (!pool.length) pool = SOUNDS;
   const snd = pick(pool); H.used.push(snd.id);
+  if (snd.pcm) { const pcm = toI16(snd.pcm); for (const c of E.conns.values()) if (c.open) c.send({ t: 'clip', id: snd.id, nome: snd.nome, pcm }); }
   s.soundId = snd.id; s.phase = 'listen'; s.submitted = []; s.reveal = null; s.playIdx = -1; s.wheel = []; s.wheelIdx = -1;
   H.takes = {}; H.sabNow = H.pendingSab; H.pendingSab = {};
   broadcast();
@@ -772,6 +827,58 @@ function Home() {
   </div>`;
 }
 
+function MemesCard() {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [open, setOpen] = useState(MEMES.length === 0);
+  const add = async e => {
+    const files = [...e.target.files]; e.target.value = '';
+    if (!files.length) return;
+    setBusy(true); setMsg(null);
+    let ok = 0, bad = 0;
+    for (const f of files) {
+      try {
+        const pcm = await decodeMeme(f);
+        if (pcm.length < SR * 0.3) { bad++; continue; }
+        const id = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const nome = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim().slice(0, 30) || 'Meme';
+        MEMES.push(makeClip(id, nome, pcm));
+        await dbPut({ id, nome, pcm: toI16(pcm) });
+        ok++;
+      } catch (err) { bad++; }
+    }
+    setBusy(false);
+    setMsg((ok ? ok + ' meme(s) adicionado(s)! ' : '') + (bad ? bad + ' arquivo(s) não deu pra usar.' : ''));
+    if (ok && E.s.pack !== 'memes' && E.s.pack !== 'tudo') { E.s.pack = 'memes'; broadcast(); } else if (ok && E.s.pack !== 'tudo') broadcast(); else notify();
+  };
+  const del = async m => {
+    MEMES.splice(MEMES.indexOf(m), 1); delete CLIPS[m.id];
+    try { await dbDel(m.id); } catch (e) {}
+    if (!MEMES.length && E.s.pack === 'memes') { E.s.pack = 'tudo'; broadcast(); } else notify();
+  };
+  const rename = async m => {
+    const n = prompt('Nome do meme', m.nome); if (!n) return;
+    m.nome = n.trim().slice(0, 30) || m.nome;
+    try { await dbPut({ id: m.id, nome: m.nome, pcm: toI16(m.pcm) }); } catch (e) {}
+    notify();
+  };
+  return html`<div className="card col">
+    <div className="row" onClick=${() => setOpen(!open)} style=${{ cursor: 'pointer' }}>
+      <h2 className="grow">🎭 Meus memes (${MEMES.length})</h2><span>${open ? '▲' : '▼'}</span></div>
+    ${open && html`
+      <p className="small" style=${{ textAlign: 'left', margin: 0 }}>Carregue áudios curtos (1 a 3 s, até 4 s) de uma voz ou som marcante. Eles ficam salvos neste celular e são enviados pros amigos na hora da rodada.</p>
+      <label className="btn ghost" style=${{ textAlign: 'center', fontSize: 17, color: '#fff' }}>
+        ${busy ? 'Processando…' : '➕ Adicionar áudios'}
+        <input type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac" multiple style=${{ display: 'none' }} onChange=${add} disabled=${busy}/>
+      </label>
+      ${msg && html`<div className="small">${msg}</div>`}
+      <div className="col" style=${{ gap: 6 }}>${MEMES.map(m => html`<div key=${m.id} className="sc">
+        <button className="btn ghost" style=${{ padding: '4px 10px', fontSize: 16 }} onClick=${() => playRef(m)}>▶</button>
+        <span className="grow" onClick=${() => rename(m)} style=${{ cursor: 'pointer' }}>${m.nome} <span className="hint">· ${m.dur.toFixed(1)}s ✏️</span></span>
+        <button className="btn ghost" style=${{ padding: '4px 10px', fontSize: 16 }} onClick=${() => del(m)}>✕</button></div>`)}</div>`}
+  </div>`;
+}
+
 function Lobby() {
   const s = E.s, meP = me();
   const link = location.origin + location.pathname + '?sala=' + s.code;
@@ -798,8 +905,9 @@ function Lobby() {
       <label>Rodadas</label>
       <div className="seg">${[3, 5, 7].map(n => html`<button key=${n} className=${s.total === n ? 'on' : ''} onClick=${() => setOpt('total', n)}>${n}</button>`)}</div>
       <label>Pacote de sons</label>
-      <div className="seg">${PACKS.map(p => html`<button key=${p.id} className=${s.pack === p.id ? 'on' : ''} onClick=${() => setOpt('pack', p.id)}>${p.nome}</button>`)}</div>
+      <div className="seg" style=${{ flexWrap: 'wrap' }}>${PACKS.filter(p => p.id !== 'memes' || MEMES.length || s.pack === 'memes').map(p => html`<button key=${p.id} className=${s.pack === p.id ? 'on' : ''} onClick=${() => setOpt('pack', p.id)}>${p.nome}</button>`)}</div>
     </div>
+    <${MemesCard}/>
     <button className="btn mint" onClick=${hostStart}>▶️ Começar${s.players.length < 2 ? ' (sozinho)' : ''}</button>`
     : html`<div className="card col">
       <label>Trocar bonequinho</label>
@@ -972,6 +1080,7 @@ function App() {
   return html`<${Game}/>`;
 }
 
+loadMemes();
 ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
 </script>
 </body>
